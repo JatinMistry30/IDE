@@ -1,0 +1,18 @@
+{
+    "java.project.sourcePaths": ["src"],
+    "java.project.outputPath": "bin",
+    "java.project.referencedLibraries": [
+        "lib/**/*.jar",
+        "c:\\Users\\SHREEASHAPURAMAA\\Desktop\\UnderWorking-Code\\javafx\\lib\\javafx.base.jar",
+        "c:\\Users\\SHREEASHAPURAMAA\\Desktop\\UnderWorking-Code\\javafx\\lib\\javafx.controls.jar",
+        "c:\\Users\\SHREEASHAPURAMAA\\Desktop\\UnderWorking-Code\\javafx\\lib\\javafx.fxml.jar",
+        "c:\\Users\\SHREEASHAPURAMAA\\Desktop\\UnderWorking-Code\\javafx\\lib\\javafx.graphics.jar",
+        "c:\\Users\\SHREEASHAPURAMAA\\Desktop\\UnderWorking-Code\\javafx\\lib\\javafx.media.jar",
+        "c:\\Users\\SHREEASHAPURAMAA\\Desktop\\UnderWorking-Code\\javafx\\lib\\javafx.swing.jar",
+        "c:\\Users\\SHREEASHAPURAMAA\\Desktop\\UnderWorking-Code\\javafx\\lib\\javafx.web.jar",
+        "c:\\Users\\SHREEASHAPURAMAA\\Desktop\\UnderWorking-Code\\javafx\\lib\\javafx-swt.jar",
+        "c:\\Users\\SHREEASHAPURAMAA\\Desktop\\UnderWorking-Code\\javafx\\lib\\jdk.jsobject.jar",
+        "c:\\Users\\SHREEASHAPURAMAA\\Desktop\\UnderWorking-Code\\javafx\\lib\\jfx.incubator.input.jar",
+        "c:\\Users\\SHREEASHAPURAMAA\\Desktop\\UnderWorking-Code\\javafx\\lib\\jfx.incubator.richtext.jar"
+    ]
+}

@@ -1,0 +1,197 @@
+.root {
+    -fx-background-color: #0d1117;
+    -fx-font-family: "Consolas", "Courier New", "Monaco", monospace;
+}
+
+.menu-bar {
+    -fx-background-color: #161b22;
+    -fx-padding: 0;
+    -fx-border-width: 0;
+}
+
+.menu {
+    -fx-text-fill: #c9d1d9;
+    -fx-font-size: 13px;
+    -fx-font-weight: normal;
+    -fx-padding: 5px 12px;
+    -fx-background-color: transparent;
+}
+
+.menu:hover {
+    -fx-background-color: #1f6feb;
+}
+
+.menu:showing {
+    -fx-background-color: #1f6feb;
+}
+
+.context-menu {
+    -fx-background-color: #161b22;
+    -fx-border-color: #30363d;
+    -fx-border-width: 1px;
+    -fx-padding: 4px 0;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.6), 10, 0, 0, 3);
+}
+
+.menu-item {
+    -fx-background-color: transparent;
+    -fx-text-fill: #c9d1d9;
+    -fx-padding: 6px 30px 6px 20px;
+    -fx-font-size: 13px;
+}
+
+.menu-item:hover {
+    -fx-background-color: #388bfd;
+}
+
+.menu-item:focused {
+    -fx-background-color: #388bfd;
+}
+
+.menu-item .label {
+    -fx-text-fill: #c9d1d9;
+    -fx-font-size: 13px;
+}
+
+.label {
+    -fx-text-fill: #c9d1d9;
+    -fx-font-size: 14px;
+}
+
+.menu:focused {
+    -fx-background-color: transparent;
+}
+
+.menu-item:focused {
+    -fx-background-insets: 0;
+}
+
+.split-pane {
+    -fx-background-color: #0d1117;
+    -fx-padding: 0;
+}
+
+.split-pane-divider {
+    -fx-background-color: #30363d;
+    -fx-padding: 0 1px 0 1px;
+}
+
+.file-explorer {
+    -fx-background-color: #161b22;
+    -fx-padding: 0;
+}
+
+.explorer-title {
+    -fx-background-color: #161b22;
+    -fx-text-fill: #8b949e;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-padding: 10px;
+}
+
+.tree-view {
+    -fx-background-color: #161b22;
+    -fx-border-width: 0;
+    -fx-padding: 5px;
+}
+
+.tree-view .tree-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: #c9d1d9;
+    -fx-padding: 4px 8px;
+    -fx-font-size: 13px;
+}
+
+.tree-view .tree-cell:hover {
+    -fx-background-color: #21262d;
+}
+
+.tree-view .tree-cell:selected {
+    -fx-background-color: #1f6feb;
+    -fx-text-fill: #ffffff;
+}
+
+.tree-view:focused .tree-cell:selected {
+    -fx-background-color: #1f6feb;
+    -fx-text-fill: #ffffff;
+}
+
+.tree-view .tree-cell:empty {
+    -fx-background-color: transparent;
+}
+
+.tree-view .arrow {
+    -fx-background-color: #8b949e;
+}
+
+.editor-area {
+    -fx-background-color: #0d1117;
+    -fx-padding: 0;
+}
+
+.editor-title {
+    -fx-background-color: #161b22;
+    -fx-text-fill: #c9d1d9;
+    -fx-font-size: 13px;
+    -fx-padding: 10px 15px;
+    -fx-border-color: #30363d;
+    -fx-border-width: 0 0 1px 0;
+}
+
+.text-editor {
+    -fx-background-color: #0d1117;
+    -fx-text-fill: #c9d1d9;
+    -fx-font-family: "Consolas", "Courier New", "Monaco", monospace;
+    -fx-font-size: 14px;
+    -fx-padding: 10px;
+    -fx-border-width: 0;
+    -fx-highlight-fill: #1f6feb;
+    -fx-highlight-text-fill: #ffffff;
+}
+
+.text-editor .content {
+    -fx-background-color: #0d1117;
+}
+
+.text-editor:focused {
+    -fx-border-color: transparent;
+    -fx-background-color: #0d1117;
+}
+
+.text-editor .scroll-pane {
+    -fx-background-color: #0d1117;
+}
+
+.text-editor .scroll-pane .viewport {
+    -fx-background-color: #0d1117;
+}
+
+.text-editor .scroll-bar:vertical {
+    -fx-background-color: #161b22;
+}
+
+.text-editor .scroll-bar:horizontal {
+    -fx-background-color: #161b22;
+}
+
+.text-editor .scroll-bar .thumb {
+    -fx-background-color: #30363d;
+    -fx-background-radius: 5px;
+}
+
+.text-editor .scroll-bar .thumb:hover {
+    -fx-background-color: #484f58;
+}
+
+.text-editor .scroll-bar .increment-button,
+.text-editor .scroll-bar .decrement-button {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+
+.scroll-bar:vertical .increment-arrow,
+.scroll-bar:vertical .decrement-arrow,
+.scroll-bar:horizontal .increment-arrow,
+.scroll-bar:horizontal .decrement-arrow {
+    -fx-background-color: #8b949e;
+}
