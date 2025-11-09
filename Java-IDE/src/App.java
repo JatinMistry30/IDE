@@ -8,7 +8,6 @@ import javafx.scene.control.*;
 import javafx.stage.DirectoryChooser;
 import javafx.geometry.Pos;
 import javafx.geometry.Orientation;
-import javafx.geometry.Insets;
 import javafx.application.Platform;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
@@ -19,7 +18,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Optional;
 
-import javax.security.auth.callback.LanguageCallback;
+import javax.swing.text.AbstractDocument.Content;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -50,6 +49,10 @@ public class App extends Application {
     private String currentDirectory;
     private boolean terminalVisible = false;
     private SplitPane editorTerminalSplitPane;
+    private TabPane editorTabPane;
+    private Map<Tab, File> tabFileMap = new HashMap<>(); // Maps tabs to files
+    private Map<Tab, String> tabOriginalContentMap = new HashMap<>();
+    private Map<Tab, TextArea> tabTextAreaMap = new HashMap<>();
     private Map<TreeItem<String>, File> treeItemFileMap = new HashMap<>();
 
     @Override
@@ -377,50 +380,283 @@ public class App extends Application {
         explorerBox.getChildren().addAll(explorerLabel, treeView);
         VBox.setVgrow(treeView, javafx.scene.layout.Priority.ALWAYS);
 
+        // Add Context menu for right-click
+        ContextMenu contextMenu = new ContextMenu();
+        MenuItem newFileItem = new MenuItem("new File");
+        MenuItem newFolderItem = new MenuItem("New Folder");
+        MenuItem deleteItem = new MenuItem("Delete");
+
+        newFileItem.setOnAction(e -> createNewFile());
+        newFolderItem.setOnAction(e -> createNewFolder());
+        deleteItem.setOnAction(e -> deleteSelected());
+
+        contextMenu.getItems().addAll(newFileItem, newFolderItem, new SeparatorMenuItem(), deleteItem);
+
+        treeView.setContextMenu(contextMenu);
         return explorerBox;
     }
 
-    // Create editor on right side
+    // Create new file in selected directory
+    private void createNewFile() {
+        TreeItem<String> selectedItem = treeView.getSelectionModel().getSelectedItem();
+        if (selectedItem == null) {
+            showError("Please select a folder first");
+            return;
+        }
+
+        File parentDir = getDirectoryForItem(selectedItem);
+        if (parentDir == null) {
+            showError("Please select a valid folder");
+            return;
+        }
+
+        TextInputDialog dialog = new TextInputDialog("newfile.txt");
+        dialog.initOwner(mainStage);
+        dialog.setTitle("New File");
+        dialog.setHeaderText("Create New File");
+        dialog.setContentText("Enter file name:");
+
+        Optional<String> result = dialog.showAndWait();
+        result.ifPresent(fileName -> {
+            try {
+                File newFile = new File(parentDir, fileName);
+                if (newFile.createNewFile()) {
+                    // Add to tree
+                    TreeItem<String> newItem = new TreeItem<>("📄 " + fileName);
+                    treeItemFileMap.put(newItem, newFile);
+                    selectedItem.getChildren().add(newItem);
+                    selectedItem.setExpanded(true);
+                    showInfo("File created successfully!");
+                } else {
+                    showError("File already exists!");
+                }
+            } catch (IOException e) {
+                showError("Error creating file: " + e.getMessage());
+            }
+        });
+    }
+
+    // Create new folder in selected directory
+    private void createNewFolder() {
+        TreeItem<String> selectedItem = treeView.getSelectionModel().getSelectedItem();
+        if (selectedItem == null) {
+            showError("Please select a folder first");
+            return;
+        }
+
+        File parentDir = getDirectoryForItem(selectedItem);
+        if (parentDir == null) {
+            showError("Please select a valid folder");
+            return;
+        }
+
+        TextInputDialog dialog = new TextInputDialog("newfolder");
+        dialog.initOwner(mainStage);
+        dialog.setTitle("New Folder");
+        dialog.setHeaderText("Create New Folder");
+        dialog.setContentText("Enter folder name:");
+
+        Optional<String> result = dialog.showAndWait();
+        result.ifPresent(folderName -> {
+            File newFolder = new File(parentDir, folderName);
+            if (newFolder.mkdir()) {
+                // Add to tree
+                TreeItem<String> newItem = new TreeItem<>("📁 " + folderName);
+                treeItemFileMap.put(newItem, newFolder);
+                selectedItem.getChildren().add(newItem);
+                selectedItem.setExpanded(true);
+                showInfo("Folder created successfully!");
+            } else {
+                showError("Folder already exists or cannot be created!");
+            }
+        });
+    }
+
+    // Delete selected file or folder
+    private void deleteSelected() {
+        TreeItem<String> selectedItem = treeView.getSelectionModel().getSelectedItem();
+        if (selectedItem == null || selectedItem == rootItem) {
+            showError("Please select a file or folder to delete");
+            return;
+        }
+
+        File file = treeItemFileMap.get(selectedItem);
+        if (file == null) {
+            return;
+        }
+
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.initOwner(mainStage);
+        alert.setTitle("Confirm Delete");
+        alert.setHeaderText("Delete " + file.getName() + "?");
+        alert.setContentText("This action cannot be undone.");
+
+        Optional<ButtonType> result = alert.showAndWait();
+        if (result.isPresent() && result.get() == ButtonType.OK) {
+            if (file.delete()) {
+                selectedItem.getParent().getChildren().remove(selectedItem);
+                treeItemFileMap.remove(selectedItem);
+                showInfo("Deleted successfully!");
+            } else {
+                showError("Could not delete file/folder!");
+            }
+        }
+    }
+
+    // Get directory for tree item (file's parent or folder itself)
+    private File getDirectoryForItem(TreeItem<String> item) {
+        File file = treeItemFileMap.get(item);
+        if (file == null) {
+            return null;
+        }
+        return file.isDirectory() ? file : file.getParentFile();
+    }
+
+    // Create editor on right side with tabs
     private VBox createEditor() {
         VBox editorBox = new VBox();
         editorBox.getStyleClass().add("editor-area");
 
-        // Title bar with file name and close button
-        HBox titleBox = new HBox();
-        titleBox.setSpacing(10);
-        titleBox.setAlignment(Pos.CENTER_LEFT);
-        titleBox.getStyleClass().add("editor-title-box");
+        // Create TabPane for multiple files
+        editorTabPane = new TabPane();
+        editorTabPane.getStyleClass().add("editor-tabs");
+        editorTabPane.setTabClosingPolicy(TabPane.TabClosingPolicy.ALL_TABS);
 
-        editorLabel = new Label("📄 Untitled-1");
-        editorLabel.getStyleClass().add("editor-title");
+        // Create initial welcome tab
+        Tab welcomeTab = createWelcomeTab();
+        editorTabPane.getTabs().add(welcomeTab);
 
-        Button closeButton = new Button("✕");
-        closeButton.getStyleClass().add("close-button");
-        closeButton.setOnAction(e -> closeFile());
+        // Handle tab selection change
+        editorTabPane.getSelectionModel().selectedItemProperty().addListener((obs, oldTab, newTab) -> {
+            if (newTab != null) {
+                updateCurrentFileFromTab(newTab);
+            }
+        });
 
-        titleBox.getChildren().addAll(editorLabel, closeButton);
+        editorBox.getChildren().add(editorTabPane);
+        VBox.setVgrow(editorTabPane, javafx.scene.layout.Priority.ALWAYS);
 
-        // Text area for editing
-        textArea = new TextArea();
+        return editorBox;
+    }
+
+    // Create Welcome tab
+    private Tab createWelcomeTab() {
+        Tab tab = new Tab("📄 Untitled-1");
+
+        TextArea textArea = new TextArea();
         textArea.getStyleClass().add("text-editor");
         textArea.setText("// Welcome to IDE-My\n// Please select a directory to start working\n\n");
         textArea.setWrapText(false);
 
-        // Track changes in text area
-        textArea.textProperty().addListener((observable, oldValue, newValue) -> {
-            if (currentFile != null && !newValue.equals(originalContent)) {
-                isModified = true;
-                updateEditorTitle();
-            } else if (currentFile != null && newValue.equals(originalContent)) {
-                isModified = false;
-                updateEditorTitle();
+        tab.setContent(textArea);
+
+        return tab;
+    }
+
+    // Create tab for a file
+    private Tab createFileTab(File file, String content) {
+        Tab tab = new Tab("📄 " + file.getName());
+        tab.setClosable(true);
+
+        TextArea textArea = new TextArea(content);
+        textArea.getStyleClass().add("text-editor");
+        textArea.setWrapText(false);
+
+        // Track changes for this tab
+        textArea.textProperty().addListener((obs, oldVal, newVal) -> {
+            String originalContent = tabOriginalContentMap.get(tab);
+            if (originalContent != null && !newVal.equals(originalContent)) {
+                if (!tab.getText().endsWith(" ●")) {
+                    tab.setText(tab.getText() + " ●");
+                }
+            } else {
+                tab.setText("📄 " + file.getName());
             }
         });
 
-        editorBox.getChildren().addAll(titleBox, textArea);
-        VBox.setVgrow(textArea, javafx.scene.layout.Priority.ALWAYS);
+        // handle tab close request
+        tab.setOnCloseRequest(e -> {
+            if (tab.getText().endsWith(" ●")) {
+                e.consume();
+                handleTabClose(tab);
+            } else {
+                removeTabData(tab);
+            }
+        });
 
-        return editorBox;
+        tab.setContent(textArea);
+
+        // Store tab data
+        tabFileMap.put(tab, file);
+        tabOriginalContentMap.put(tab, content);
+        tabTextAreaMap.put(tab, textArea);
+
+        return tab;
+    }
+
+    // Update current file from selectedTab
+    private void updateCurrentFileFromTab(Tab tab) {
+        currentFile = tabFileMap.get(tab);
+        if (currentFile != null) {
+            textArea = tabTextAreaMap.get(tab);
+            originalContent = tabOriginalContentMap.get(tab);
+            isModified = tab.getText().endsWith(" ●");
+        }
+    }
+
+    // Remove tab data when closing
+    private void removeTabData(Tab tab) {
+        tabFileMap.remove(tab);
+        tabOriginalContentMap.remove(tab);
+        tabTextAreaMap.remove(tab);
+    }
+
+    // Handle Tab close with unsaved Changes
+    private void handleTabClose(Tab tab) {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.initOwner(mainStage);
+        alert.setTitle("Unsaved Changes");
+        alert.setHeaderText("Do you want to save changes to " + tabFileMap.get(tab).getName() + "?");
+        alert.setContentText("Your changes will be lost if you don't save them.");
+
+        ButtonType saveButton = new ButtonType("Save");
+        ButtonType discardButton = new ButtonType("Don't Save");
+        ButtonType cancelButton = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+
+        alert.getButtonTypes().setAll(saveButton, discardButton, cancelButton);
+        Optional<ButtonType> result = alert.showAndWait();
+
+        if (result.isPresent()) {
+            if (result.get() == saveButton) {
+                saveFileFromTab(tab);
+                editorTabPane.getTabs().remove(tab);
+                removeTabData(tab);
+            } else if (result.get() == discardButton) {
+                editorTabPane.getTabs().remove(tab);
+                removeTabData(tab);
+            }
+        }
+
+    }
+
+    // Save file from specific tab
+    private void saveFileFromTab(Tab tab) {
+        File file = tabFileMap.get(tab);
+        TextArea ta = tabTextAreaMap.get(tab);
+
+        if (file != null && ta != null) {
+            try {
+                FileWriter writer = new FileWriter(file);
+                writer.write(ta.getText());
+                writer.close();
+
+                tabOriginalContentMap.put(tab, ta.getText());
+                tab.setText("📄 " + file.getName());
+                showInfo("File saved successfully!");
+            } catch (IOException e) {
+                showError("Error saving file: " + e.getMessage());
+            }
+        }
     }
 
     // Show directory chooser dialog
@@ -504,15 +740,31 @@ public class App extends Application {
         }
     }
 
-    // Read and display file content
+    // Read and display file content in new tab
     private void openFile(File file) {
         try {
+            // Check if file is already open in a tab
+            for (Tab tab : editorTabPane.getTabs()) {
+                if (file.equals(tabFileMap.get(tab))) {
+                    editorTabPane.getSelectionModel().select(tab);
+                    return;
+                }
+            }
+
+            // Read file content
             String content = new String(Files.readAllBytes(file.toPath()));
-            textArea.setText(content);
+
+            // Create new tab
+            Tab newTab = createFileTab(file, content);
+            editorTabPane.getTabs().add(newTab);
+            editorTabPane.getSelectionModel().select(newTab);
+
+            // Update current references
             currentFile = file;
+            textArea = tabTextAreaMap.get(newTab);
             originalContent = content;
             isModified = false;
-            updateEditorTitle();
+
         } catch (IOException e) {
             showError("Error opening file: " + e.getMessage());
         }
@@ -520,24 +772,11 @@ public class App extends Application {
 
     // Save current file (Ctrl+S)
     private void saveFile() {
-        if (currentFile == null) {
+        Tab currentTab = editorTabPane.getSelectionModel().getSelectedItem();
+        if (currentTab != null && tabFileMap.containsKey(currentTab)) {
+            saveFileFromTab(currentTab);
+        } else {
             showError("No file is currently open");
-            return;
-        }
-
-        try {
-            FileWriter writer = new FileWriter(currentFile);
-            writer.write(textArea.getText());
-            writer.close();
-
-            // Update original content and clear modified flag
-            originalContent = textArea.getText();
-            isModified = false;
-            updateEditorTitle();
-
-            showInfo("File saved successfully!");
-        } catch (IOException e) {
-            showError("Error saving file: " + e.getMessage());
         }
     }
 

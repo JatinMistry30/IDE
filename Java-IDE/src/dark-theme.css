@@ -1,6 +1,6 @@
 .root {
     -fx-background-color: #0d1117;
-    -fx-font-family: "Consolas", "Courier New", "Monaco", monospace;
+    -fx-font-family: "Consolas", "Courier New", "Monaco", "Fira Code", monospace;
 }
 
 .menu-bar {
@@ -129,64 +129,150 @@
     -fx-padding: 0;
 }
 
-.editor-title {
-    -fx-background-color: #161b22;
-    -fx-text-fill: #c9d1d9;
-    -fx-font-size: 13px;
-    -fx-padding: 10px 15px;
-    -fx-border-color: #30363d;
-    -fx-border-width: 0 0 1px 0;
-}
-
-.text-editor {
+.editor-tabs {
     -fx-background-color: #0d1117;
-    -fx-text-fill: #c9d1d9;
-    -fx-font-family: "Consolas", "Courier New", "Monaco", monospace;
-    -fx-font-size: 14px;
-    -fx-padding: 10px;
     -fx-border-width: 0;
-    -fx-highlight-fill: #1f6feb;
-    -fx-highlight-text-fill: #ffffff;
 }
 
-.text-editor .content {
-    -fx-background-color: #0d1117;
+.editor-tabs .tab-header-area {
+    -fx-background-color: #161b22;
+    -fx-padding: 0;
 }
 
-.text-editor:focused {
-    -fx-border-color: transparent;
-    -fx-background-color: #0d1117;
-}
-
-.text-editor .scroll-pane {
-    -fx-background-color: #0d1117;
-}
-
-.text-editor .scroll-pane .viewport {
-    -fx-background-color: #0d1117;
-}
-
-.text-editor .scroll-bar:vertical {
+.editor-tabs .tab-header-background {
     -fx-background-color: #161b22;
 }
 
-.text-editor .scroll-bar:horizontal {
+.editor-tabs .tab {
+    -fx-background-color: #161b22;
+    -fx-background-radius: 0;
+    -fx-border-width: 0 1px 0 0;
+    -fx-border-color: #30363d;
+    -fx-padding: 8px 15px;
+}
+
+.editor-tabs .tab:selected {
+    -fx-background-color: #0d1117;
+}
+
+.editor-tabs .tab:hover {
+    -fx-background-color: #21262d;
+}
+
+.editor-tabs .tab .tab-label {
+    -fx-text-fill: #8b949e;
+    -fx-font-size: 13px;
+}
+
+.editor-tabs .tab:selected .tab-label {
+    -fx-text-fill: #c9d1d9;
+}
+
+.editor-tabs .tab-close-button {
+    -fx-background-color: transparent;
+}
+
+.editor-tabs .tab-close-button:hover {
+    -fx-background-color: #ff7b72;
+    -fx-background-radius: 3px;
+}
+
+.code-editor {
+    -fx-background-color: #0d1117;
+    -fx-font-family: "Fira Code", "Consolas", "Courier New", "Monaco", monospace;
+    -fx-font-size: 14px;
+}
+
+.code-editor .text {
+    -fx-fill: #c9d1d9;
+}
+
+.code-editor .paragraph-box:has-caret {
+    -fx-background-color: #1c2128;
+}
+
+.code-editor .lineno {
+    -fx-background-color: #0d1117;
+    -fx-text-fill: #6e7681;
+    -fx-font-size: 13px;
+    -fx-padding: 0 10px 0 5px;
+}
+
+.code-editor .selection {
+    -fx-fill: #1f6feb;
+    -fx-stroke: #1f6feb;
+}
+
+.code-editor .scroll-pane {
+    -fx-background-color: #0d1117;
+}
+
+.code-editor .scroll-pane .viewport {
+    -fx-background-color: #0d1117;
+}
+
+.code-editor .scroll-bar:vertical {
     -fx-background-color: #161b22;
 }
 
-.text-editor .scroll-bar .thumb {
+.code-editor .scroll-bar:horizontal {
+    -fx-background-color: #161b22;
+}
+
+.code-editor .scroll-bar .thumb {
     -fx-background-color: #30363d;
     -fx-background-radius: 5px;
 }
 
-.text-editor .scroll-bar .thumb:hover {
+.code-editor .scroll-bar .thumb:hover {
     -fx-background-color: #484f58;
 }
 
-.text-editor .scroll-bar .increment-button,
-.text-editor .scroll-bar .decrement-button {
+.code-editor .scroll-bar .increment-button,
+.code-editor .scroll-bar .decrement-button {
     -fx-background-color: transparent;
     -fx-padding: 0;
+}
+
+.keyword {
+    -fx-fill: #ff7b72;
+    -fx-font-weight: bold;
+}
+
+.string {
+    -fx-fill: #a5d6ff;
+}
+
+.comment {
+    -fx-fill: #8b949e;
+    -fx-font-style: italic;
+}
+
+.number {
+    -fx-fill: #79c0ff;
+}
+
+.annotation {
+    -fx-fill: #d2a8ff;
+}
+
+.paren {
+    -fx-fill: #ffa657;
+    -fx-font-weight: bold;
+}
+
+.brace {
+    -fx-fill: #ffa657;
+    -fx-font-weight: bold;
+}
+
+.bracket {
+    -fx-fill: #ffa657;
+    -fx-font-weight: bold;
+}
+
+.semicolon {
+    -fx-fill: #c9d1d9;
 }
 
 .scroll-bar:vertical .increment-arrow,
@@ -194,4 +280,67 @@
 .scroll-bar:horizontal .increment-arrow,
 .scroll-bar:horizontal .decrement-arrow {
     -fx-background-color: #8b949e;
+}
+
+.terminal-area {
+    -fx-background-color: #0d1117;
+    -fx-padding: 0;
+}
+
+.terminal-title {
+    -fx-background-color: #161b22;
+    -fx-text-fill: #8b949e;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-padding: 8px 10px;
+    -fx-border-color: #30363d;
+    -fx-border-width: 1px 0 1px 0;
+}
+
+.terminal-output {
+    -fx-background-color: #0d1117;
+    -fx-padding: 10px;
+}
+
+.terminal-scroll {
+    -fx-background-color: #0d1117;
+    -fx-border-width: 0;
+}
+
+.terminal-scroll .viewport {
+    -fx-background-color: #0d1117;
+}
+
+.terminal-scroll .scroll-bar:vertical {
+    -fx-background-color: #161b22;
+}
+
+.terminal-scroll .scroll-bar .thumb {
+    -fx-background-color: #30363d;
+    -fx-background-radius: 5px;
+}
+
+.terminal-scroll .scroll-bar .thumb:hover {
+    -fx-background-color: #484f58;
+}
+
+.terminal-input {
+    -fx-background-color: #161b22;
+    -fx-text-fill: #c9d1d9;
+    -fx-font-family: "Consolas", "Courier New", "Monaco", monospace;
+    -fx-font-size: 13px;
+    -fx-padding: 8px 10px;
+    -fx-border-color: #30363d;
+    -fx-border-width: 1px 0 0 0;
+    -fx-prompt-text-fill: #6e7681;
+}
+
+.terminal-input:focused {
+    -fx-background-color: #161b22;
+    -fx-border-color: #1f6feb;
+}
+
+.separator .line {
+    -fx-border-color: #30363d;
+    -fx-border-width: 1px;
 }
