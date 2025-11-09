@@ -18,8 +18,17 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Optional;
+
+import javax.security.auth.callback.LanguageCallback;
+
 import java.util.HashMap;
 import java.util.Map;
+
+import javafx.scene.text.Text;
+import javafx.scene.text.TextFlow;
+import javafx.scene.input.KeyEvent;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 
 public class App extends Application {
 
@@ -32,22 +41,29 @@ public class App extends Application {
     private String originalContent; // Original file content to track changes
     private boolean isModified = false; // Track if file has unsaved changes
     private Stage mainStage; // Main application window
-    
-    // Map to link tree items with their files (since TreeItem doesn't have getUserData)
+
+    // Terminal variables
+    private VBox terminalBox;
+    private TextFlow terminalOutput;
+    private TextField terminalInput;
+    private ScrollPane terminalScrollPane;
+    private String currentDirectory;
+    private boolean terminalVisible = false;
+    private SplitPane editorTerminalSplitPane;
     private Map<TreeItem<String>, File> treeItemFileMap = new HashMap<>();
 
     @Override
     public void start(Stage primaryStage) {
         this.mainStage = primaryStage;
-        
+
         // Create and show the window first
         createWindow(primaryStage);
-        
+
         // Wait 2 seconds then show directory chooser
         new Thread(() -> {
             try {
                 Thread.sleep(2000);
-                
+
                 // Run on JavaFX thread
                 Platform.runLater(() -> {
                     openDirectoryChooser(primaryStage);
@@ -78,9 +94,8 @@ public class App extends Application {
 
         // Add Ctrl+S keyboard shortcut for saving
         scene.getAccelerators().put(
-            new KeyCodeCombination(KeyCode.S, KeyCombination.CONTROL_DOWN),
-            () -> saveFile()
-        );
+                new KeyCodeCombination(KeyCode.S, KeyCombination.CONTROL_DOWN),
+                () -> saveFile());
 
         // Handle window close - check for unsaved changes
         stage.setOnCloseRequest(event -> {
@@ -103,13 +118,13 @@ public class App extends Application {
         Menu fileMenu = new Menu("File");
         MenuItem openDirItem = new MenuItem("Open Directory   Ctrl+O");
         openDirItem.setOnAction(e -> openDirectoryChooser(stage));
-        
+
         MenuItem saveItem = new MenuItem("Save              Ctrl+S");
         saveItem.setOnAction(e -> saveFile());
-        
+
         MenuItem closeItem = new MenuItem("Close File        Ctrl+W");
         closeItem.setOnAction(e -> closeFile());
-        
+
         fileMenu.getItems().addAll(
                 new MenuItem("New File          Ctrl+N"),
                 openDirItem,
@@ -127,11 +142,13 @@ public class App extends Application {
                 new MenuItem("Paste             Ctrl+V"));
 
         // View Menu
-        Menu viewMenu = new Menu("View");
-        viewMenu.getItems().addAll(
+        Menu terminalMenu = new Menu("Terminal");
+        MenuItem terminalItem = new MenuItem("Terminal          Ctrl+`");
+        terminalItem.setOnAction(e -> toggleTerimal());
+        terminalMenu.getItems().addAll(
                 new MenuItem("Command Palette   Ctrl+Shift+P"),
                 new MenuItem("Explorer          Ctrl+Shift+E"),
-                new MenuItem("Terminal          Ctrl+`"));
+                terminalItem);
 
         // Run Menu
         Menu runMenu = new Menu("Run");
@@ -146,7 +163,7 @@ public class App extends Application {
                 new MenuItem("Documentation"),
                 new MenuItem("About"));
 
-        menuBar.getMenus().addAll(fileMenu, editMenu, viewMenu, runMenu, helpMenu);
+        menuBar.getMenus().addAll(fileMenu, editMenu, terminalMenu, runMenu, helpMenu);
 
         return menuBar;
     }
@@ -158,11 +175,177 @@ public class App extends Application {
         splitPane.setDividerPositions(0.25); // 25% left, 75% right
 
         VBox fileExplorer = createFileExplorer();
-        VBox editor = createEditor();
 
-        splitPane.getItems().addAll(fileExplorer, editor);
+        // Create vertical split pane for editor and terminal
+        editorTerminalSplitPane = new SplitPane();
+        editorTerminalSplitPane.setOrientation(Orientation.VERTICAL);
+        editorTerminalSplitPane.setDividerPositions(0.7); // 70% editor, 30% terminal
+
+        VBox editor = createEditor();
+        terminalBox = createTerminal();
+        terminalBox.setVisible(false);
+        terminalBox.setManaged(false);
+
+        editorTerminalSplitPane.getItems().addAll(editor, terminalBox);
+        splitPane.getItems().addAll(fileExplorer, editorTerminalSplitPane); // Fixed this line!
 
         return splitPane;
+    }
+
+    // Create terminal panel
+    private VBox createTerminal() {
+        VBox terminal = new VBox();
+        terminal.getStyleClass().add("terminal-area");
+        terminal.setPrefHeight(250);
+
+        // Terminal titlebar
+        Label terminalLabel = new Label("TERMINAL");
+        terminalLabel.getStyleClass().add("terminal-title");
+
+        // terminal output area
+        terminalOutput = new TextFlow();
+        terminalOutput.getStyleClass().add("terminal-output");
+
+        terminalScrollPane = new ScrollPane(terminalOutput);
+        terminalScrollPane.getStyleClass().add("terminal-scroll");
+        terminalScrollPane.setFitToWidth(true);
+        terminalScrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.ALWAYS);
+
+        // Terminal input field
+        terminalInput = new TextField();
+        terminalInput.getStyleClass().add("terminal-input");
+        terminalInput.setPromptText("Enter command...");
+
+        // Handle command execution on enter key
+        terminalInput.setOnAction(e -> executeCommand(terminalInput.getText()));
+
+        terminal.getChildren().addAll(terminalLabel, terminalScrollPane, terminalInput);
+        VBox.setVgrow(terminalScrollPane, javafx.scene.layout.Priority.ALWAYS);
+
+        return terminal;
+    }
+
+    // Toggle terminal visibility
+    private void toggleTerimal() {
+        terminalVisible = !terminalVisible;
+        terminalBox.setVisible(terminalVisible);
+        terminalBox.setManaged(terminalVisible);
+
+        if (terminalVisible && currentDirectory != null) {
+            appendToTerminal("Terminal opened at: " + currentDirectory + "\n", "green");
+            terminalInput.requestFocus();
+        }
+    }
+
+    // Append text to terminal with color
+    private void appendToTerminal(String message, String color) {
+        Text text = new Text(message);
+        text.setStyle("-fx-fill: " + color + ";");
+        terminalOutput.getChildren().add(text);
+
+        // Auto scroll to bottom
+        Platform.runLater(() -> terminalScrollPane.setVvalue(1.0));
+    }
+
+    // Execute terminal Command
+    // Execute terminal command (uses Linux commands on all systems)
+    private void executeCommand(String command) {
+        if (command.trim().isEmpty()) {
+            return;
+        }
+
+        // Display the command
+        appendToTerminal("$ " + command + "\n", "#c9d1d9");
+
+        // Clear input
+        terminalInput.clear();
+
+        // Handle special commands
+        if (command.startsWith("cd ")) {
+            handleCdCommand(command.substring(3).trim());
+            return;
+        }
+
+        // Execute system command using bash/sh
+        try {
+            ProcessBuilder processBuilder = new ProcessBuilder();
+
+            // Set working directory
+            if (currentDirectory != null) {
+                processBuilder.directory(new File(currentDirectory));
+            }
+
+            // Use bash/sh for all systems (requires Git Bash, WSL, or similar on Windows)
+            String os = System.getProperty("os.name").toLowerCase();
+            if (os.contains("win")) {
+                // For Windows, try Git Bash first, then WSL
+                File gitBash = new File("C:\\Program Files\\Git\\bin\\bash.exe");
+                if (gitBash.exists()) {
+                    processBuilder.command(gitBash.getAbsolutePath(), "-c", command);
+                } else {
+                    // Try WSL
+                    processBuilder.command("wsl", "bash", "-c", command);
+                }
+            } else {
+                // Linux/Mac - use bash directly
+                processBuilder.command("bash", "-c", command);
+            }
+
+            Process process = processBuilder.start();
+
+            // Read output in separate thread
+            new Thread(() -> {
+                try {
+                    BufferedReader reader = new BufferedReader(
+                            new InputStreamReader(process.getInputStream()));
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        String output = line + "\n";
+                        Platform.runLater(() -> appendToTerminal(output, "#a5d6ff"));
+                    }
+
+                    // Read error output
+                    BufferedReader errorReader = new BufferedReader(
+                            new InputStreamReader(process.getErrorStream()));
+                    while ((line = errorReader.readLine()) != null) {
+                        String error = line + "\n";
+                        Platform.runLater(() -> appendToTerminal(error, "#ff7b72"));
+                    }
+
+                    process.waitFor();
+
+                } catch (Exception e) {
+                    Platform.runLater(() -> appendToTerminal("Error: " + e.getMessage() + "\n", "#ff7b72"));
+                }
+            }).start();
+
+        } catch (Exception e) {
+            appendToTerminal("Error executing command: " + e.getMessage() + "\n", "#ff7b72");
+            appendToTerminal("Note: On Windows, install Git Bash or WSL to use Linux commands\n", "#ffa657");
+        }
+    }
+
+    // Handle cd (change directory) command
+    private void handleCdCommand(String path) {
+        File newDir;
+
+        if (path.equals("..")) {
+            // Go up one directory
+            newDir = new File(currentDirectory).getParentFile();
+        } else if (path.startsWith("/") || path.matches("[A-Za-z]:.*")) {
+            // Absolute path
+            newDir = new File(path);
+        } else {
+            // Relative path
+            newDir = new File(currentDirectory, path);
+        }
+
+        if (newDir != null && newDir.exists() && newDir.isDirectory()) {
+            currentDirectory = newDir.getAbsolutePath();
+            appendToTerminal("Changed directory to: " + currentDirectory + "\n", "#7ee787");
+        } else {
+            appendToTerminal("Directory not found: " + path + "\n", "#ff7b72");
+        }
     }
 
     // Create file explorer on left side
@@ -207,14 +390,14 @@ public class App extends Application {
         titleBox.setSpacing(10);
         titleBox.setAlignment(Pos.CENTER_LEFT);
         titleBox.getStyleClass().add("editor-title-box");
-        
+
         editorLabel = new Label("📄 Untitled-1");
         editorLabel.getStyleClass().add("editor-title");
-        
+
         Button closeButton = new Button("✕");
         closeButton.getStyleClass().add("close-button");
         closeButton.setOnAction(e -> closeFile());
-        
+
         titleBox.getChildren().addAll(editorLabel, closeButton);
 
         // Text area for editing
@@ -244,9 +427,9 @@ public class App extends Application {
     private void openDirectoryChooser(Stage stage) {
         DirectoryChooser directoryChooser = new DirectoryChooser();
         directoryChooser.setTitle("Select Project Directory");
-        
+
         File selectedDirectory = directoryChooser.showDialog(stage);
-        
+
         if (selectedDirectory != null) {
             loadDirectory(selectedDirectory);
         }
@@ -257,17 +440,21 @@ public class App extends Application {
         rootItem.getChildren().clear();
         treeItemFileMap.clear(); // Clear the map
         rootItem.setValue("📁 " + directory.getName());
-        
+
         // Load all files and folders
         loadFilesIntoTree(directory, rootItem);
-        
-        textArea.setText("// Directory loaded: " + directory.getAbsolutePath() + "\n// Double-click a file to edit\n\n");
+
+        textArea.setText(
+                "// Directory loaded: " + directory.getAbsolutePath() + "\n// Double-click a file to edit\n\n");
+
+        // Set current directory for terminal
+        currentDirectory = directory.getAbsolutePath();
     }
 
     // Recursively load files and folders into tree
     private void loadFilesIntoTree(File directory, TreeItem<String> parentItem) {
         File[] files = directory.listFiles();
-        
+
         if (files != null) {
             for (File file : files) {
                 // Choose icon based on file type
@@ -290,12 +477,12 @@ public class App extends Application {
                         icon = "📄 ";
                     }
                 }
-                
+
                 // Create tree item and store file reference in map
                 TreeItem<String> item = new TreeItem<>(icon + file.getName());
                 treeItemFileMap.put(item, file);
                 parentItem.getChildren().add(item);
-                
+
                 // If folder, load its contents recursively
                 if (file.isDirectory()) {
                     loadFilesIntoTree(file, item);
@@ -342,12 +529,12 @@ public class App extends Application {
             FileWriter writer = new FileWriter(currentFile);
             writer.write(textArea.getText());
             writer.close();
-            
+
             // Update original content and clear modified flag
             originalContent = textArea.getText();
             isModified = false;
             updateEditorTitle();
-            
+
             showInfo("File saved successfully!");
         } catch (IOException e) {
             showError("Error saving file: " + e.getMessage());
@@ -398,7 +585,7 @@ public class App extends Application {
         alert.getButtonTypes().setAll(saveButton, discardButton, cancelButton);
 
         Optional<ButtonType> result = alert.showAndWait();
-        
+
         if (result.isPresent()) {
             if (result.get() == saveButton) {
                 saveFile();
@@ -433,7 +620,7 @@ public class App extends Application {
         alert.getButtonTypes().setAll(saveButton, discardButton, cancelButton);
 
         Optional<ButtonType> result = alert.showAndWait();
-        
+
         if (result.isPresent()) {
             if (result.get() == saveButton) {
                 saveFile();
