@@ -9,7 +9,11 @@
             "name": "Launch JavaFX App",
             "request": "launch",
             "mainClass": "App",
-            "vmArgs": "--module-path \"C:\\Users\\SHREEASHAPURAMAA\\Desktop\\UnderWorking-Code\\javafx\\lib\" --add-modules javafx.controls,javafx.fxml"
+            "vmArgs": "--module-path \"C:\\Users\\SHREEASHAPURAMAA\\Desktop\\UnderWorking-Code\\javafx\\lib\" --add-modules javafx.controls,javafx.fxml",
+             "classpath": [
+                "bin",
+                "lib/*"
+            ]
         }
     ]
 }
